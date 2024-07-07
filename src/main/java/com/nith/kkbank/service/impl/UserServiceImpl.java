@@ -1,9 +1,5 @@
 package com.nith.kkbank.service.impl;
-
-import com.nith.kkbank.dto.AccountInfo;
-import com.nith.kkbank.dto.BankResponse;
-import com.nith.kkbank.dto.EmailDetails;
-import com.nith.kkbank.dto.UserRequest;
+import com.nith.kkbank.dto.*;
 import com.nith.kkbank.entity.User;
 import com.nith.kkbank.repository.UserRepository;
 import com.nith.kkbank.service.EmailService;
@@ -72,5 +68,35 @@ public class UserServiceImpl implements UserService {
                         .accountName(savedUser.getFirstName() + " " + savedUser.getLastName() + " " + savedUser.getOtherName())
                         .build())
                 .build();
+    }
+
+    @Override
+    public BankResponse balanceEnquiry(EnquiryRequest request) {
+        if (userRepository.existsByAccountNumber(request.getAccountNumber())) {
+            User user = userRepository.findByAccountNumber(request.getAccountNumber());
+            return BankResponse.builder()
+                    .responseCode(AccountUtils.ACCOUNT_FOUND_CODE)
+                    .responseMessage(AccountUtils.ACCOUNT_FOUND_MESSAGE)
+                    .accountInfo(AccountInfo.builder()
+                            .accountBalance(user.getAccountBalance())
+                            .accountNumber(request.getAccountNumber())
+                            .accountName(user.getFirstName() + " " + user.getLastName())
+                            .build())
+                    .build();
+        }
+        return BankResponse.builder()
+                .responseCode(AccountUtils.ACCOUNT_NOT_EXISTS_CODE)
+                .responseMessage(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE)
+                .accountInfo(null)
+                .build();
+    }
+
+    @Override
+    public String nameEnquiry(EnquiryRequest request) {
+        if (userRepository.existsByAccountNumber(request.getAccountNumber())) {
+            User user = userRepository.findByAccountNumber(request.getAccountNumber());
+            return user.getFirstName() + " " + user.getLastName() + " " + user.getOtherName();
+        }
+        return AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE;
     }
 }
