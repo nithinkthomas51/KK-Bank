@@ -1,5 +1,7 @@
 package com.nith.kkbank.utils;
 
+import com.nith.kkbank.entity.User;
+
 import java.time.Year;
 
 public class AccountUtils {
@@ -12,6 +14,11 @@ public class AccountUtils {
     public static final String ACCOUNT_NOT_EXISTS_MESSAGE = "User with the provided account number doesn't exists!";
     public static final String ACCOUNT_FOUND_CODE = "004";
     public static final String ACCOUNT_FOUND_MESSAGE = "User account found";
+    public static final String ACCOUNT_CREDIT_CODE = "005";
+    public static final String ACCOUNT_CREDIT_SUCCESS_MESSAGE = "User account credited successfully!";
+    public static final String ACCOUNT_DEBIT_CODE = "006";
+    public static final String ACCOUNT_DEBIT_SUCCESS_MESSAGE = "User account debited successfully!";
+    public static final String ACCOUNT_DEBIT_FAILURE_MESSAGE = "Not enough amount available to withdraw!";
 
     public static String generateAccountNumber() {
         Year currentYear = Year.now();
@@ -22,9 +29,10 @@ public class AccountUtils {
         String year = String.valueOf(currentYear);
         String randNum = String.valueOf(randomNumber);
 
-        StringBuilder accountNumber = new StringBuilder();
-
-        return accountNumber.append(year).append(randNum).toString();
+        return year + randNum;
     }
 
+    public static String deriveAccountName(User user) {
+        return user.getFirstName() + " " + user.getLastName() + " " + user.getOtherName();
+    }
 }

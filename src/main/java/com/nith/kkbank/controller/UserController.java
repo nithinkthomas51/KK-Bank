@@ -1,6 +1,7 @@
 package com.nith.kkbank.controller;
 
 import com.nith.kkbank.dto.BankResponse;
+import com.nith.kkbank.dto.CreditDebitRequest;
 import com.nith.kkbank.dto.EnquiryRequest;
 import com.nith.kkbank.dto.UserRequest;
 import com.nith.kkbank.service.UserService;
@@ -27,5 +28,15 @@ public class UserController {
     @GetMapping("/username")
     public String nameEnquiry(@RequestBody EnquiryRequest request) {
         return userService.nameEnquiry(request);
+    }
+
+    @GetMapping("/credit")
+    public BankResponse creditAccount(@RequestBody CreditDebitRequest request) {
+        return userService.creditAccount(request);
+    }
+
+    @GetMapping("/debit")
+    public BankResponse debitAccount(@RequestBody CreditDebitRequest request) {
+        return userService.debitAccount(request);
     }
 }
