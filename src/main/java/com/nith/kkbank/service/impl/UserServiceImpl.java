@@ -5,12 +5,16 @@ import com.nith.kkbank.repository.UserRepository;
 import com.nith.kkbank.service.EmailService;
 import com.nith.kkbank.service.UserService;
 import com.nith.kkbank.utils.AccountUtils;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserServiceImpl implements UserService {
 
     @Autowired
@@ -28,33 +32,22 @@ public class UserServiceImpl implements UserService {
                     .accountInfo(null)
                     .build();
         }
-        User newUser = User.builder()
-                .firstName(userRequest.getFirstName())
-                .lastName(userRequest.getLastName())
-                .otherName(userRequest.getOtherName())
-                .gender(userRequest.getGender())
-                .address(userRequest.getAddress())
-                .stateOfOrigin(userRequest.getStateOfOrigin())
-                .accountNumber(AccountUtils.generateAccountNumber())
-                .accountBalance(BigDecimal.ZERO)
-                .email(userRequest.getEmail())
-                .phoneNumber(userRequest.getPhoneNumber())
-                .alternatePhoneNumber(userRequest.getAlternatePhoneNumber())
-                .status("ACTIVE")
-                .build();
+        User newUser = AccountUtils.buildUser(userRequest);
 
         User savedUser = userRepository.save(newUser);
         String savedUserName = AccountUtils.deriveAccountName(savedUser);
-        EmailDetails emailDetails = EmailDetails.builder()
-                .recipient(savedUser.getEmail())
-                .messageBody("Congratulations! Your Account has been successfully created.\n\nAccount Details : \n"
-                            +"Account Name : "
+        if (emailService != null) {
+            EmailDetails emailDetails = EmailDetails.builder()
+                    .recipient(savedUser.getEmail())
+                    .messageBody("Congratulations! Your Account has been successfully created.\n\nAccount Details : \n"
+                            + "Account Name : "
                             + savedUserName
                             + "\nAccount Number : "
                             + savedUser.getAccountNumber())
-                .subject("Account Creation")
-                .build();
-        emailService.sendEmailAlert(emailDetails);
+                    .subject("Account Creation")
+                    .build();
+            emailService.sendEmailAlert(emailDetails);
+        }
         return BankResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
                 .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)

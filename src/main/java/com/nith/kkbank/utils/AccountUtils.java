@@ -1,7 +1,9 @@
 package com.nith.kkbank.utils;
 
+import com.nith.kkbank.dto.UserRequest;
 import com.nith.kkbank.entity.User;
 
+import java.math.BigDecimal;
 import java.time.Year;
 
 public class AccountUtils {
@@ -34,5 +36,22 @@ public class AccountUtils {
 
     public static String deriveAccountName(User user) {
         return user.getFirstName() + " " + user.getLastName() + " " + user.getOtherName();
+    }
+
+    public static User buildUser(UserRequest userRequest) {
+        return User.builder()
+                .firstName(userRequest.getFirstName())
+                .lastName(userRequest.getLastName())
+                .otherName(userRequest.getOtherName())
+                .gender(userRequest.getGender())
+                .address(userRequest.getAddress())
+                .stateOfOrigin(userRequest.getStateOfOrigin())
+                .accountNumber(AccountUtils.generateAccountNumber())
+                .accountBalance(BigDecimal.ZERO)
+                .email(userRequest.getEmail())
+                .phoneNumber(userRequest.getPhoneNumber())
+                .alternatePhoneNumber(userRequest.getAlternatePhoneNumber())
+                .status("ACTIVE")
+                .build();
     }
 }
