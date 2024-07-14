@@ -152,4 +152,87 @@ public class UserServiceImpl implements UserService {
                         .build())
                 .build();
     }
+
+    @Override
+    public BankResponse transfer(TransferRequest request) {
+
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            return BankResponse.builder()
+                    .responseCode(AccountUtils.TRANSFER_FAILURE_CODE)
+                    .responseMessage(AccountUtils.INVALID_AMOUNT)
+                    .accountInfo(null)
+                    .build();
+        }
+
+        Boolean isSourceAccountExist = userRepository.existsByAccountNumber(request.getSourceAccountNumber());
+        Boolean isDestinationAccountExist = userRepository.existsByAccountNumber(request.getDestinationAccountNumber());
+
+        if (!(isSourceAccountExist && isDestinationAccountExist)) {
+            return BankResponse.builder()
+                    .responseCode(AccountUtils.TRANSFER_FAILURE_CODE)
+                    .responseMessage(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE + ". "
+                            + AccountUtils.TRANSFER_FAILURE_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
+
+        User sourceUser = userRepository.findByAccountNumber(request.getSourceAccountNumber());
+        if (sourceUser.getAccountBalance().compareTo(request.getAmount()) < 0) {
+            return BankResponse.builder()
+                    .responseCode(AccountUtils.TRANSFER_FAILURE_CODE)
+                    .responseMessage(AccountUtils.ACCOUNT_DEBIT_FAILURE_MESSAGE + ". "
+                            + AccountUtils.TRANSFER_FAILURE_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
+
+        User destinationUser = userRepository.findByAccountNumber(request.getDestinationAccountNumber());
+
+        // Debit from source account
+        sourceUser.setAccountBalance(sourceUser.getAccountBalance().subtract(request.getAmount()));
+        userRepository.save(sourceUser);
+
+        // Credit to destination account
+        destinationUser.setAccountBalance(destinationUser.getAccountBalance().add(request.getAmount()));
+        userRepository.save(destinationUser);
+
+        if (emailService != null) {
+            EmailDetails sourceEmailDetails = EmailDetails.builder()
+                    .subject("DEBIT ALERT")
+                    .recipient(sourceUser.getEmail())
+                    .messageBody("Your transfer of "
+                            + request.getAmount()
+                            + " rupees to the account "
+                            + request.getDestinationAccountNumber()
+                            + " ("
+                            + AccountUtils.deriveAccountName(destinationUser)
+                            + ") is successful."
+                            + "\nYour current balance : "
+                            + sourceUser.getAccountBalance())
+                    .build();
+            emailService.sendEmailAlert(sourceEmailDetails);
+
+            EmailDetails destinationEmailDetails = EmailDetails.builder()
+                    .recipient(destinationUser.getEmail())
+                    .subject("CREDIT ALERT")
+                    .messageBody("Amount Credited : "
+                            + request.getAmount()
+                            + "\nTransferred by : "
+                            + sourceUser.getAccountNumber()
+                            + "("
+                            + AccountUtils.deriveAccountName(sourceUser)
+                            + ")"
+                            + "\nYour current balance : "
+                            + destinationUser.getAccountBalance())
+                    .build();
+            emailService.sendEmailAlert(destinationEmailDetails);
+        }
+
+        return BankResponse.builder()
+                .responseCode(AccountUtils.TRANSFER_SUCCESS_CODE)
+                .responseMessage(AccountUtils.TRANSFER_SUCCESS_MESSAGE)
+                .accountInfo(null)
+                .build();
+    }
+
 }

@@ -21,6 +21,11 @@ public class AccountUtils {
     public static final String ACCOUNT_DEBIT_CODE = "006";
     public static final String ACCOUNT_DEBIT_SUCCESS_MESSAGE = "User account debited successfully!";
     public static final String ACCOUNT_DEBIT_FAILURE_MESSAGE = "Not enough amount available to withdraw!";
+    public static final String TRANSFER_SUCCESS_CODE = "007";
+    public static final String TRANSFER_SUCCESS_MESSAGE = "Transfer successful";
+    public static final String TRANSFER_FAILURE_CODE = "008";
+    public static final String TRANSFER_FAILURE_MESSAGE = "Transfer failed";
+    public static final String INVALID_AMOUNT = "Requested amount is invalid";
 
     public static String generateAccountNumber() {
         Year currentYear = Year.now();
