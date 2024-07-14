@@ -1,9 +1,6 @@
 package com.nith.kkbank.service.impl;
 
-import com.nith.kkbank.dto.BankResponse;
-import com.nith.kkbank.dto.CreditDebitRequest;
-import com.nith.kkbank.dto.EnquiryRequest;
-import com.nith.kkbank.dto.UserRequest;
+import com.nith.kkbank.dto.*;
 import com.nith.kkbank.entity.User;
 import com.nith.kkbank.repository.UserRepository;
 import com.nith.kkbank.service.UserService;
@@ -217,5 +214,157 @@ class UserServiceImplTest {
         assertThat(debitResponse.getAccountInfo()).isNull();
         assertThat(debitResponse.getResponseCode()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_CODE);
         assertThat(debitResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE);
+    }
+
+    @Test
+    void testTransferToZeroBalanceAccount() {
+        mock(UserRepository.class);
+        User user1 = AccountUtils.buildUser(userRequest);
+        user1.setAccountBalance(BigDecimal.valueOf(10000));
+        BigDecimal sourceAccountBalance = user1.getAccountBalance();
+        UserRequest additionalUserRequest = new UserRequest("JKL", "MNO", "PQR", "Male", "Stu, Vwx",
+                "NGA", "jklmno07@gmail.com", "9897965432", "9988776655");
+        User user2 = AccountUtils.buildUser(additionalUserRequest);
+        BigDecimal destinationAccountBalance = user2.getAccountBalance();
+        when(userRepository.existsByAccountNumber(Mockito.any(String.class))).thenReturn(true);
+        when(userRepository.findByAccountNumber(user1.getAccountNumber())).thenReturn(user1);
+        when(userRepository.findByAccountNumber(user2.getAccountNumber())).thenReturn(user2);
+        when(userRepository.save(user1)).thenReturn(user1);
+        when(userRepository.save(user2)).thenReturn(user2);
+        TransferRequest transferRequest = TransferRequest.builder()
+                .sourceAccountNumber(user1.getAccountNumber())
+                .destinationAccountNumber(user2.getAccountNumber())
+                .amount(BigDecimal.valueOf(5000))
+                .build();
+        BankResponse transferResponse = userService.transfer(transferRequest);
+        assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_CODE);
+        assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_MESSAGE);
+        assertThat(user1.getAccountBalance()).isEqualTo(sourceAccountBalance.subtract(transferRequest.getAmount()));
+        assertThat(user2.getAccountBalance()).isEqualTo(destinationAccountBalance.add(transferRequest.getAmount()));
+    }
+
+    @Test
+    void testTransferToNonZeroBalanceAccount() {
+        mock(UserRepository.class);
+        User user1 = AccountUtils.buildUser(userRequest);
+        user1.setAccountBalance(BigDecimal.valueOf(10000));
+        BigDecimal sourceAccountBalance = user1.getAccountBalance();
+        UserRequest additionalUserRequest = new UserRequest("JKL", "MNO", "PQR", "Male", "Stu, Vwx",
+                "NGA", "jklmno07@gmail.com", "9897965432", "9988776655");
+        User user2 = AccountUtils.buildUser(additionalUserRequest);
+        user2.setAccountBalance(BigDecimal.valueOf(7000));
+        BigDecimal destinationAccountBalance = user2.getAccountBalance();
+        when(userRepository.existsByAccountNumber(Mockito.any(String.class))).thenReturn(true);
+        when(userRepository.findByAccountNumber(user1.getAccountNumber())).thenReturn(user1);
+        when(userRepository.findByAccountNumber(user2.getAccountNumber())).thenReturn(user2);
+        when(userRepository.save(user1)).thenReturn(user1);
+        when(userRepository.save(user2)).thenReturn(user2);
+        TransferRequest transferRequest = TransferRequest.builder()
+                .sourceAccountNumber(user1.getAccountNumber())
+                .destinationAccountNumber(user2.getAccountNumber())
+                .amount(BigDecimal.valueOf(5000))
+                .build();
+        BankResponse transferResponse = userService.transfer(transferRequest);
+        assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_CODE);
+        assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_MESSAGE);
+        assertThat(user1.getAccountBalance()).isEqualTo(sourceAccountBalance.subtract(transferRequest.getAmount()));
+        assertThat(user2.getAccountBalance()).isEqualTo(destinationAccountBalance.add(transferRequest.getAmount()));
+    }
+
+    @Test
+    void testTransferBothAccountNotExist() {
+        mock(UserRepository.class);
+        when(userRepository.existsByAccountNumber(Mockito.any(String.class))).thenReturn(false);
+        TransferRequest request = TransferRequest.builder()
+                .sourceAccountNumber("2024567890")
+                .destinationAccountNumber("2024123456")
+                .amount(BigDecimal.valueOf(3000))
+                .build();
+        BankResponse transferResponse = userService.transfer(request);
+        assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
+        assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE
+                + ". " + AccountUtils.TRANSFER_FAILURE_MESSAGE);
+    }
+
+    @Test
+    void testTransferSourceAccountNotExist() {
+        mock(UserRepository.class);
+        User destinationUser = AccountUtils.buildUser(userRequest);
+        UserRequest additionalUser = new UserRequest("JKL", "MNO", "PQR", "Male", "Stu, Vwx",
+                "NGA", "jklmno07@gmail.com", "9897965432", "9988776655");
+        User sourceUser = AccountUtils.buildUser(additionalUser);
+        when(userRepository.existsByAccountNumber(sourceUser.getAccountNumber())).thenReturn(false);
+        when(userRepository.existsByAccountNumber(destinationUser.getAccountNumber())).thenReturn(true);
+        TransferRequest request = TransferRequest.builder()
+                .sourceAccountNumber(sourceUser.getAccountNumber())
+                .destinationAccountNumber(destinationUser.getAccountNumber())
+                .amount(BigDecimal.valueOf(3000))
+                .build();
+        BankResponse transferResponse = userService.transfer(request);
+        assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
+        assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE
+                + ". " + AccountUtils.TRANSFER_FAILURE_MESSAGE);
+    }
+
+    @Test
+    void testTransferDestinationAccountNotExist() {
+        mock(UserRepository.class);
+        User destinationUser = AccountUtils.buildUser(userRequest);
+        UserRequest additionalUser = new UserRequest("JKL", "MNO", "PQR", "Male", "Stu, Vwx",
+                "NGA", "jklmno07@gmail.com", "9897965432", "9988776655");
+        User sourceUser = AccountUtils.buildUser(additionalUser);
+        when(userRepository.existsByAccountNumber(sourceUser.getAccountNumber())).thenReturn(true);
+        when(userRepository.existsByAccountNumber(destinationUser.getAccountNumber())).thenReturn(false);
+        TransferRequest request = TransferRequest.builder()
+                .sourceAccountNumber(sourceUser.getAccountNumber())
+                .destinationAccountNumber(destinationUser.getAccountNumber())
+                .amount(BigDecimal.valueOf(3000))
+                .build();
+        BankResponse transferResponse = userService.transfer(request);
+        assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
+        assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE
+                + ". " + AccountUtils.TRANSFER_FAILURE_MESSAGE);
+    }
+
+    @Test
+    void testTransferFromInsufficientBalanceSourceAccount() {
+        mock(UserRepository.class);
+        User sourceUser = AccountUtils.buildUser(userRequest);
+        sourceUser.setAccountBalance(BigDecimal.valueOf(1000));
+        when(userRepository.existsByAccountNumber(Mockito.any(String.class))).thenReturn(true);
+        when(userRepository.findByAccountNumber(sourceUser.getAccountNumber())).thenReturn(sourceUser);
+        TransferRequest request = TransferRequest.builder()
+                .sourceAccountNumber(sourceUser.getAccountNumber())
+                .destinationAccountNumber("2024123456")
+                .amount(BigDecimal.valueOf(3000))
+                .build();
+        BankResponse transferResponse = userService.transfer(request);
+        assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
+        assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_DEBIT_FAILURE_MESSAGE
+                + ". " + AccountUtils.TRANSFER_FAILURE_MESSAGE);
+    }
+
+    @Test
+    void testTransferZeroAmount() {
+        TransferRequest request = TransferRequest.builder()
+                .sourceAccountNumber("2024567890")
+                .destinationAccountNumber("2024123456")
+                .amount(BigDecimal.ZERO)
+                .build();
+        BankResponse transferResponse = userService.transfer(request);
+        assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
+        assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.INVALID_AMOUNT);
+    }
+
+    @Test
+    void testTransferNegativeAmount() {
+        TransferRequest request = TransferRequest.builder()
+                .sourceAccountNumber("2024567890")
+                .destinationAccountNumber("2024123456")
+                .amount(BigDecimal.valueOf(-1000))
+                .build();
+        BankResponse transferResponse = userService.transfer(request);
+        assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
+        assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.INVALID_AMOUNT);
     }
 }

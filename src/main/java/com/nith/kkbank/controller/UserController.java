@@ -1,9 +1,6 @@
 package com.nith.kkbank.controller;
 
-import com.nith.kkbank.dto.BankResponse;
-import com.nith.kkbank.dto.CreditDebitRequest;
-import com.nith.kkbank.dto.EnquiryRequest;
-import com.nith.kkbank.dto.UserRequest;
+import com.nith.kkbank.dto.*;
 import com.nith.kkbank.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -30,13 +27,18 @@ public class UserController {
         return userService.nameEnquiry(request);
     }
 
-    @GetMapping("/credit")
+    @PostMapping("/credit")
     public BankResponse creditAccount(@RequestBody CreditDebitRequest request) {
         return userService.creditAccount(request);
     }
 
-    @GetMapping("/debit")
+    @PostMapping("/debit")
     public BankResponse debitAccount(@RequestBody CreditDebitRequest request) {
         return userService.debitAccount(request);
+    }
+
+    @PostMapping("/transfer")
+    public BankResponse transfer(@RequestBody TransferRequest request) {
+        return userService.transfer(request);
     }
 }

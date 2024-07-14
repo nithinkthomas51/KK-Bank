@@ -113,7 +113,7 @@ class UserControllerTest {
                         .build())
                 .build();
         when(userService.creditAccount(creditDebitRequest)).thenReturn(creditResponse);
-        mockMvc.perform(get("/user/credit")
+        mockMvc.perform(post("/user/credit")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(creditDebitRequest)))
                 .andDo(print())
@@ -137,7 +137,7 @@ class UserControllerTest {
                         .build())
                 .build();
         when(userService.debitAccount(creditDebitRequest)).thenReturn(debitResponse);
-        mockMvc.perform(get("/user/debit")
+        mockMvc.perform(post("/user/debit")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(creditDebitRequest)))
                 .andDo(print())
@@ -147,4 +147,6 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.accountInfo.accountBalance")
                         .value(user.getAccountBalance().subtract(creditDebitRequest.getAmount())));
     }
+
+    // TODO : Test case for /user/transfer endpoint
 }
