@@ -1,10 +1,13 @@
 package com.nith.kkbank.service.impl;
 import com.nith.kkbank.dto.*;
+import com.nith.kkbank.entity.Transaction;
 import com.nith.kkbank.entity.User;
+import com.nith.kkbank.repository.TransactionRepository;
 import com.nith.kkbank.repository.UserRepository;
 import com.nith.kkbank.service.EmailService;
 import com.nith.kkbank.service.UserService;
 import com.nith.kkbank.utils.AccountUtils;
+import com.nith.kkbank.utils.TransactionUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +25,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     EmailService emailService;
+
+    @Autowired
+    TransactionRepository transactionRepository;
 
     @Override
     public BankResponse createAccount(UserRequest userRequest) {
@@ -96,6 +102,16 @@ public class UserServiceImpl implements UserService {
             userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(request.getAmount()));
             userRepository.save(userToCredit);
 
+            Transaction creditTransaction = Transaction.builder()
+                    .accountNumber(userToCredit.getAccountNumber())
+                    .creditAmount(request.getAmount())
+                    .debitAmount(BigDecimal.ZERO)
+                    .transactionType(TransactionUtils.CREDIT)
+                    .transactionDescription(TransactionUtils.createCreditDescription())
+                    .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
+                    .build();
+            transactionRepository.save(creditTransaction);
+
             return BankResponse.builder()
                     .responseCode(AccountUtils.ACCOUNT_CREDIT_CODE)
                     .responseMessage(AccountUtils.ACCOUNT_CREDIT_SUCCESS_MESSAGE)
@@ -141,6 +157,15 @@ public class UserServiceImpl implements UserService {
 
         userToDebit.setAccountBalance(currentBalance.subtract(request.getAmount()));
         userRepository.save(userToDebit);
+        Transaction debitTransaction = Transaction.builder()
+                .transactionType(TransactionUtils.DEBIT)
+                .transactionDescription(TransactionUtils.createDebitDescription())
+                .accountNumber(userToDebit.getAccountNumber())
+                .creditAmount(BigDecimal.ZERO)
+                .debitAmount(request.getAmount())
+                .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
+                .build();
+        transactionRepository.save(debitTransaction);
 
         return BankResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_DEBIT_CODE)
@@ -191,10 +216,26 @@ public class UserServiceImpl implements UserService {
         // Debit from source account
         sourceUser.setAccountBalance(sourceUser.getAccountBalance().subtract(request.getAmount()));
         userRepository.save(sourceUser);
+        transactionRepository.save(Transaction.builder()
+                        .transactionDescription(TransactionUtils.createTransferDescription(destinationUser.getAccountNumber(), false))
+                        .debitAmount(request.getAmount())
+                        .transactionType(TransactionUtils.TRANSFER)
+                        .creditAmount(BigDecimal.ZERO)
+                        .accountNumber(sourceUser.getAccountNumber())
+                        .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
+                        .build());
 
         // Credit to destination account
         destinationUser.setAccountBalance(destinationUser.getAccountBalance().add(request.getAmount()));
         userRepository.save(destinationUser);
+        transactionRepository.save(Transaction.builder()
+                .transactionDescription(TransactionUtils.createTransferDescription(sourceUser.getAccountNumber(), true))
+                .creditAmount(request.getAmount())
+                .transactionType(TransactionUtils.TRANSFER)
+                .debitAmount(BigDecimal.ZERO)
+                .accountNumber(destinationUser.getAccountNumber())
+                .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
+                .build());
 
         if (emailService != null) {
             EmailDetails sourceEmailDetails = EmailDetails.builder()
