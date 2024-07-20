@@ -36,7 +36,7 @@ class UserServiceImplTest {
     @BeforeEach
     void setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this);
-        userService = new UserServiceImpl(userRepository, null, transactionRepository);
+        userService = new UserServiceImpl(userRepository, transactionRepository, null);
         userRequest = new UserRequest("Abc", "Def", "Ghi", "Male", "Jkl, Mno",
                 "KRL", "abcdef07@gmail.com", "1234567890", "9876543210");
     }

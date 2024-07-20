@@ -2,15 +2,17 @@ package com.nith.kkbank.service.impl;
 import com.nith.kkbank.dto.*;
 import com.nith.kkbank.entity.Transaction;
 import com.nith.kkbank.entity.User;
+import com.nith.kkbank.event.CreateAccountEvent;
+import com.nith.kkbank.event.TransferEvent;
 import com.nith.kkbank.repository.TransactionRepository;
 import com.nith.kkbank.repository.UserRepository;
-import com.nith.kkbank.service.EmailService;
 import com.nith.kkbank.service.UserService;
 import com.nith.kkbank.utils.AccountUtils;
 import com.nith.kkbank.utils.TransactionUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -24,10 +26,10 @@ public class UserServiceImpl implements UserService {
     UserRepository userRepository;
 
     @Autowired
-    EmailService emailService;
+    TransactionRepository transactionRepository;
 
     @Autowired
-    TransactionRepository transactionRepository;
+    private ApplicationEventPublisher eventPublisher;
 
     @Override
     public BankResponse createAccount(UserRequest userRequest) {
@@ -40,21 +42,15 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
         User newUser = AccountUtils.buildUser(userRequest);
-
         User savedUser = userRepository.save(newUser);
         String savedUserName = AccountUtils.deriveAccountName(savedUser);
-        if (emailService != null) {
-            EmailDetails emailDetails = EmailDetails.builder()
-                    .recipient(savedUser.getEmail())
-                    .messageBody("Congratulations! Your Account has been successfully created.\n\nAccount Details : \n"
-                            + "Account Name : "
-                            + savedUserName
-                            + "\nAccount Number : "
-                            + savedUser.getAccountNumber())
-                    .subject("Account Creation")
-                    .build();
-            emailService.sendEmailAlert(emailDetails);
+
+        // Publish the create account event
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new CreateAccountEvent(this, savedUserName,
+                    savedUser.getAccountNumber(), savedUser.getEmail()));
         }
+
         return BankResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_CREATION_SUCCESS_CODE)
                 .responseMessage(AccountUtils.ACCOUNT_CREATION_SUCCESS_MESSAGE)
@@ -257,36 +253,17 @@ public class UserServiceImpl implements UserService {
                 .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
                 .build());
 
-        if (emailService != null) {
-            EmailDetails sourceEmailDetails = EmailDetails.builder()
-                    .subject("DEBIT ALERT")
-                    .recipient(sourceUser.getEmail())
-                    .messageBody("Your transfer of "
-                            + request.getAmount()
-                            + " rupees to the account "
-                            + request.getDestinationAccountNumber()
-                            + " ("
-                            + AccountUtils.deriveAccountName(destinationUser)
-                            + ") is successful."
-                            + "\nYour current balance : "
-                            + sourceUser.getAccountBalance())
-                    .build();
-            emailService.sendEmailAlert(sourceEmailDetails);
-
-            EmailDetails destinationEmailDetails = EmailDetails.builder()
-                    .recipient(destinationUser.getEmail())
-                    .subject("CREDIT ALERT")
-                    .messageBody("Amount Credited : "
-                            + request.getAmount()
-                            + "\nTransferred by : "
-                            + sourceUser.getAccountNumber()
-                            + "("
-                            + AccountUtils.deriveAccountName(sourceUser)
-                            + ")"
-                            + "\nYour current balance : "
-                            + destinationUser.getAccountBalance())
-                    .build();
-            emailService.sendEmailAlert(destinationEmailDetails);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new TransferEvent(this,
+                    sourceUser.getEmail(),
+                    destinationUser.getEmail(),
+                    AccountUtils.deriveAccountName(sourceUser),
+                    AccountUtils.deriveAccountName(destinationUser),
+                    sourceUser.getAccountNumber(),
+                    destinationUser.getAccountNumber(),
+                    sourceUser.getAccountBalance(),
+                    destinationUser.getAccountBalance(),
+                    request.getAmount()));
         }
 
         return BankResponse.builder()
