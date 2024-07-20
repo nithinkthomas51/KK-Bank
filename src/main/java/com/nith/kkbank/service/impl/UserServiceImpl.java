@@ -36,6 +36,7 @@ public class UserServiceImpl implements UserService {
                     .responseCode(AccountUtils.ACCOUNT_EXISTS_CODE)
                     .responseMessage(AccountUtils.ACCOUNT_EXISTS_MESSAGE)
                     .accountInfo(null)
+                    .transactionInfo(null)
                     .build();
         }
         User newUser = AccountUtils.buildUser(userRequest);
@@ -62,6 +63,7 @@ public class UserServiceImpl implements UserService {
                         .accountNumber(savedUser.getAccountNumber())
                         .accountName(savedUserName)
                         .build())
+                .transactionInfo(null)
                 .build();
     }
 
@@ -77,12 +79,14 @@ public class UserServiceImpl implements UserService {
                             .accountNumber(request.getAccountNumber())
                             .accountName(AccountUtils.deriveAccountName(user))
                             .build())
+                    .transactionInfo(null)
                     .build();
         }
         return BankResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_NOT_EXISTS_CODE)
                 .responseMessage(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE)
                 .accountInfo(null)
+                .transactionInfo(null)
                 .build();
     }
 
@@ -110,7 +114,7 @@ public class UserServiceImpl implements UserService {
                     .transactionDescription(TransactionUtils.createCreditDescription())
                     .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
                     .build();
-            transactionRepository.save(creditTransaction);
+            Transaction savedTransaction = transactionRepository.save(creditTransaction);
 
             return BankResponse.builder()
                     .responseCode(AccountUtils.ACCOUNT_CREDIT_CODE)
@@ -120,12 +124,18 @@ public class UserServiceImpl implements UserService {
                             .accountBalance(userToCredit.getAccountBalance())
                             .accountNumber(userToCredit.getAccountNumber())
                             .build())
+                    .transactionInfo(TransactionInfo.builder()
+                            .transactionId(savedTransaction.getTransactionID())
+                            .transactionAmount(savedTransaction.getCreditAmount())
+                            .transactionType(savedTransaction.getTransactionType())
+                            .build())
                     .build();
         }
         return BankResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_NOT_EXISTS_CODE)
                 .responseMessage(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE)
                 .accountInfo(null)
+                .transactionInfo(null)
                 .build();
     }
 
@@ -137,6 +147,7 @@ public class UserServiceImpl implements UserService {
                     .responseCode(AccountUtils.ACCOUNT_NOT_EXISTS_CODE)
                     .responseMessage(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE)
                     .accountInfo(null)
+                    .transactionInfo(null)
                     .build();
         }
 
@@ -152,6 +163,7 @@ public class UserServiceImpl implements UserService {
                             .accountBalance(userToDebit.getAccountBalance())
                             .accountNumber(userToDebit.getAccountNumber())
                             .build())
+                    .transactionInfo(null)
                     .build();
         }
 
@@ -165,7 +177,7 @@ public class UserServiceImpl implements UserService {
                 .debitAmount(request.getAmount())
                 .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
                 .build();
-        transactionRepository.save(debitTransaction);
+        Transaction savedTransaction = transactionRepository.save(debitTransaction);
 
         return BankResponse.builder()
                 .responseCode(AccountUtils.ACCOUNT_DEBIT_CODE)
@@ -174,6 +186,11 @@ public class UserServiceImpl implements UserService {
                         .accountName(AccountUtils.deriveAccountName(userToDebit))
                         .accountBalance(userToDebit.getAccountBalance())
                         .accountNumber(userToDebit.getAccountNumber())
+                        .build())
+                .transactionInfo(TransactionInfo.builder()
+                        .transactionId(savedTransaction.getTransactionID())
+                        .transactionAmount(savedTransaction.getDebitAmount())
+                        .transactionType(savedTransaction.getTransactionType())
                         .build())
                 .build();
     }
@@ -186,6 +203,7 @@ public class UserServiceImpl implements UserService {
                     .responseCode(AccountUtils.TRANSFER_FAILURE_CODE)
                     .responseMessage(AccountUtils.INVALID_AMOUNT)
                     .accountInfo(null)
+                    .transactionInfo(null)
                     .build();
         }
 
@@ -198,6 +216,7 @@ public class UserServiceImpl implements UserService {
                     .responseMessage(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE + ". "
                             + AccountUtils.TRANSFER_FAILURE_MESSAGE)
                     .accountInfo(null)
+                    .transactionInfo(null)
                     .build();
         }
 
@@ -208,6 +227,7 @@ public class UserServiceImpl implements UserService {
                     .responseMessage(AccountUtils.ACCOUNT_DEBIT_FAILURE_MESSAGE + ". "
                             + AccountUtils.TRANSFER_FAILURE_MESSAGE)
                     .accountInfo(null)
+                    .transactionInfo(null)
                     .build();
         }
 
@@ -228,7 +248,7 @@ public class UserServiceImpl implements UserService {
         // Credit to destination account
         destinationUser.setAccountBalance(destinationUser.getAccountBalance().add(request.getAmount()));
         userRepository.save(destinationUser);
-        transactionRepository.save(Transaction.builder()
+        Transaction savedCreditTransaction = transactionRepository.save(Transaction.builder()
                 .transactionDescription(TransactionUtils.createTransferDescription(sourceUser.getAccountNumber(), true))
                 .creditAmount(request.getAmount())
                 .transactionType(TransactionUtils.TRANSFER)
@@ -273,6 +293,11 @@ public class UserServiceImpl implements UserService {
                 .responseCode(AccountUtils.TRANSFER_SUCCESS_CODE)
                 .responseMessage(AccountUtils.TRANSFER_SUCCESS_MESSAGE)
                 .accountInfo(null)
+                .transactionInfo(TransactionInfo.builder()
+                        .transactionId(savedCreditTransaction.getTransactionID())
+                        .transactionAmount(savedCreditTransaction.getCreditAmount())
+                        .transactionType(savedCreditTransaction.getTransactionType())
+                        .build())
                 .build();
     }
 
