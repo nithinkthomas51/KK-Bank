@@ -18,17 +18,20 @@ public class TransferEventEmailHandler {
     @EventListener
     @Async
     void process(TransferEvent event) {
-        EmailDetails sourceDetails = EmailUtils.generateEmailDetailsForSource(event.getSourceUserEmail(),
+        EmailDetails sourceDetails = EmailUtils.generateTransferEmailDetailsForSource(
+                event.getSourceUserEmail(),
                 event.getDestinationUserAccountNumber(),
                 event.getDestinationUserName(),
                 event.getSourceAccountBalance(),
                 event.getAmount());
 
-        EmailDetails destinationEmailDetails = EmailUtils.generateEmailDetailsForDestination(event.getDestinationUserEmail(),
+        EmailDetails destinationEmailDetails = EmailUtils.generateTransferEmailDetailsForDestination(
+                event.getDestinationUserEmail(),
                 event.getSourceUserAccountNumber(),
                 event.getSourceUserName(),
                 event.getDestinationAccountBalance(),
                 event.getAmount());
+
         sendMailToSource(sourceDetails);
         sendMailToDestination(destinationEmailDetails);
     }

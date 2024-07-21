@@ -3,6 +3,7 @@ import com.nith.kkbank.dto.*;
 import com.nith.kkbank.entity.Transaction;
 import com.nith.kkbank.entity.User;
 import com.nith.kkbank.event.CreateAccountEvent;
+import com.nith.kkbank.event.CreditDebitEvent;
 import com.nith.kkbank.event.TransferEvent;
 import com.nith.kkbank.repository.TransactionRepository;
 import com.nith.kkbank.repository.UserRepository;
@@ -102,6 +103,14 @@ public class UserServiceImpl implements UserService {
             userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(request.getAmount()));
             userRepository.save(userToCredit);
 
+            if (eventPublisher != null) {
+                eventPublisher.publishEvent(new CreditDebitEvent(this,
+                        userToCredit.getEmail(),
+                        request.getAccountNumber(),
+                        userToCredit.getAccountBalance(),
+                        request.getAmount(), TransactionUtils.CREDIT));
+            }
+
             Transaction creditTransaction = Transaction.builder()
                     .accountNumber(userToCredit.getAccountNumber())
                     .creditAmount(request.getAmount())
@@ -165,6 +174,15 @@ public class UserServiceImpl implements UserService {
 
         userToDebit.setAccountBalance(currentBalance.subtract(request.getAmount()));
         userRepository.save(userToDebit);
+
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new CreditDebitEvent(this,
+                    userToDebit.getEmail(),
+                    request.getAccountNumber(),
+                    userToDebit.getAccountBalance(),
+                    request.getAmount(), TransactionUtils.DEBIT));
+        }
+
         Transaction debitTransaction = Transaction.builder()
                 .transactionType(TransactionUtils.DEBIT)
                 .transactionDescription(TransactionUtils.createDebitDescription())

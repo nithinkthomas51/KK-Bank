@@ -14,12 +14,14 @@ public class TransactionUtils {
     public static final String TRANSACTION_PENDING = "PENDING";
     public static final String TRANSACTION_FAILED = "FAILED";
 
+    // TODO : Change these 2 static functions into static final variables
+
     public static String createCreditDescription() {
-        return "Credited via online banking";
+        return "Credited by self";
     }
 
     public static String createDebitDescription() {
-        return "Debited via online banking";
+        return "Debited by self";
     }
 
     public static String createTransferDescription(String accountNumber, boolean credited) {
