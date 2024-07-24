@@ -138,15 +138,6 @@ class UserServiceImplTest {
         when(userRepository.findByAccountNumber(user.getAccountNumber())).thenReturn(user);
         when(userRepository.save(Mockito.any(User.class))).thenReturn(user);
         CreditDebitRequest creditDebitRequest = new CreditDebitRequest(user.getAccountNumber(), BigDecimal.valueOf(5000));
-        transaction = Transaction.builder()
-                .transactionType(TransactionUtils.CREDIT)
-                .transactionDescription(TransactionUtils.createCreditDescription())
-                .accountNumber(user.getAccountNumber())
-                .creditAmount(creditDebitRequest.getAmount())
-                .debitAmount(BigDecimal.ZERO)
-                .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
-                .build();
-        when(transactionRepository.save(Mockito.any(Transaction.class))).thenReturn(transaction);
         BankResponse creditResponse = userService.creditAccount(creditDebitRequest);
         assertThat(creditResponse.getAccountInfo()).isNotNull();
         assertThat(creditResponse.getAccountInfo().getAccountBalance()).isEqualTo(creditDebitRequest.getAmount());
@@ -154,9 +145,6 @@ class UserServiceImplTest {
         assertThat(creditResponse.getAccountInfo().getAccountNumber()).isEqualTo(creditDebitRequest.getAccountNumber());
         assertThat(creditResponse.getResponseCode()).isEqualTo(AccountUtils.ACCOUNT_CREDIT_CODE);
         assertThat(creditResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_CREDIT_SUCCESS_MESSAGE);
-        assertThat(creditResponse.getTransactionInfo()).isNotNull();
-        assertThat(creditResponse.getTransactionInfo().getTransactionType()).isEqualTo(transaction.getTransactionType());
-        assertThat(creditResponse.getTransactionInfo().getTransactionAmount()).isEqualTo(transaction.getCreditAmount());
     }
 
     @Test
@@ -168,7 +156,6 @@ class UserServiceImplTest {
         assertThat(creditResponse.getResponseCode()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_CODE);
         assertThat(creditResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE);
         assertThat(creditResponse.getAccountInfo()).isNull();
-        assertThat(creditResponse.getTransactionInfo()).isNull();
     }
 
     @Test
@@ -182,15 +169,6 @@ class UserServiceImplTest {
         when(userRepository.findByAccountNumber(user.getAccountNumber())).thenReturn(user);
         when(userRepository.save(user)).thenReturn(user);
         CreditDebitRequest debitRequest = new CreditDebitRequest(user.getAccountNumber(), BigDecimal.valueOf(10000));
-        transaction = Transaction.builder()
-                .transactionDescription(TransactionUtils.createDebitDescription())
-                .transactionType(TransactionUtils.DEBIT)
-                .debitAmount(debitRequest.getAmount())
-                .creditAmount(BigDecimal.ZERO)
-                .accountNumber(debitRequest.getAccountNumber())
-                .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
-                .build();
-        when(transactionRepository.save(Mockito.any(Transaction.class))).thenReturn(transaction);
         BankResponse debitResponse = userService.debitAccount(debitRequest);
         assertThat(debitResponse.getAccountInfo()).isNotNull();
         assertThat(debitResponse.getAccountInfo().getAccountBalance())
@@ -199,9 +177,6 @@ class UserServiceImplTest {
         assertThat(debitResponse.getAccountInfo().getAccountNumber()).isEqualTo(debitRequest.getAccountNumber());
         assertThat(debitResponse.getResponseCode()).isEqualTo(AccountUtils.ACCOUNT_DEBIT_CODE);
         assertThat(debitResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_DEBIT_SUCCESS_MESSAGE);
-        assertThat(debitResponse.getTransactionInfo()).isNotNull();
-        assertThat(debitResponse.getTransactionInfo().getTransactionAmount()).isEqualTo(transaction.getDebitAmount());
-        assertThat(debitResponse.getTransactionInfo().getTransactionType()).isEqualTo(transaction.getTransactionType());
     }
 
     @Test
@@ -220,7 +195,6 @@ class UserServiceImplTest {
         assertThat(debitResponse.getAccountInfo().getAccountNumber()).isEqualTo(debitRequest.getAccountNumber());
         assertThat(debitResponse.getResponseCode()).isEqualTo(AccountUtils.ACCOUNT_DEBIT_CODE);
         assertThat(debitResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_DEBIT_FAILURE_MESSAGE);
-        assertThat(debitResponse.getTransactionInfo()).isNull();
     }
 
     @Test
@@ -237,7 +211,6 @@ class UserServiceImplTest {
         assertThat(debitResponse.getAccountInfo().getAccountNumber()).isEqualTo(debitRequest.getAccountNumber());
         assertThat(debitResponse.getResponseCode()).isEqualTo(AccountUtils.ACCOUNT_DEBIT_CODE);
         assertThat(debitResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_DEBIT_FAILURE_MESSAGE);
-        assertThat(debitResponse.getTransactionInfo()).isNull();
     }
 
     @Test
@@ -249,7 +222,6 @@ class UserServiceImplTest {
         assertThat(debitResponse.getAccountInfo()).isNull();
         assertThat(debitResponse.getResponseCode()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_CODE);
         assertThat(debitResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE);
-        assertThat(debitResponse.getTransactionInfo()).isNull();
     }
 
     @Test
@@ -286,9 +258,6 @@ class UserServiceImplTest {
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_MESSAGE);
         assertThat(user1.getAccountBalance()).isEqualTo(sourceAccountBalance.subtract(transferRequest.getAmount()));
         assertThat(user2.getAccountBalance()).isEqualTo(destinationAccountBalance.add(transferRequest.getAmount()));
-        assertThat(transferResponse.getTransactionInfo()).isNotNull();
-        assertThat(transferResponse.getTransactionInfo().getTransactionAmount()).isEqualTo(transferRequest.getAmount());
-        assertThat(transferResponse.getTransactionInfo().getTransactionType()).isEqualTo(TransactionUtils.TRANSFER);
     }
 
     @Test
@@ -327,9 +296,6 @@ class UserServiceImplTest {
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_MESSAGE);
         assertThat(user1.getAccountBalance()).isEqualTo(sourceAccountBalance.subtract(transferRequest.getAmount()));
         assertThat(user2.getAccountBalance()).isEqualTo(destinationAccountBalance.add(transferRequest.getAmount()));
-        assertThat(transferResponse.getTransactionInfo()).isNotNull();
-        assertThat(transferResponse.getTransactionInfo().getTransactionType()).isEqualTo(TransactionUtils.TRANSFER);
-        assertThat(transferResponse.getTransactionInfo().getTransactionAmount()).isEqualTo(transferRequest.getAmount());
     }
 
     @Test
@@ -346,7 +312,6 @@ class UserServiceImplTest {
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE
                 + ". " + AccountUtils.TRANSFER_FAILURE_MESSAGE);
         assertThat(transferResponse.getAccountInfo()).isNull();
-        assertThat(transferResponse.getTransactionInfo()).isNull();
     }
 
     @Test
@@ -367,7 +332,6 @@ class UserServiceImplTest {
         assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE
                 + ". " + AccountUtils.TRANSFER_FAILURE_MESSAGE);
-        assertThat(transferResponse.getTransactionInfo()).isNull();
         assertThat(transferResponse.getAccountInfo()).isNull();
     }
 
@@ -390,7 +354,6 @@ class UserServiceImplTest {
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_NOT_EXISTS_MESSAGE
                 + ". " + AccountUtils.TRANSFER_FAILURE_MESSAGE);
         assertThat(transferResponse.getAccountInfo()).isNull();
-        assertThat(transferResponse.getTransactionInfo()).isNull();
     }
 
     @Test
@@ -409,7 +372,6 @@ class UserServiceImplTest {
         assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.ACCOUNT_DEBIT_FAILURE_MESSAGE
                 + ". " + AccountUtils.TRANSFER_FAILURE_MESSAGE);
-        assertThat(transferResponse.getTransactionInfo()).isNull();
         assertThat(transferResponse.getAccountInfo()).isNull();
     }
 
@@ -423,7 +385,6 @@ class UserServiceImplTest {
         BankResponse transferResponse = userService.transfer(request);
         assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.INVALID_AMOUNT);
-        assertThat(transferResponse.getTransactionInfo()).isNull();
     }
 
     @Test
@@ -436,6 +397,5 @@ class UserServiceImplTest {
         BankResponse transferResponse = userService.transfer(request);
         assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_FAILURE_CODE);
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.INVALID_AMOUNT);
-        assertThat(transferResponse.getTransactionInfo()).isNull();
     }
 }

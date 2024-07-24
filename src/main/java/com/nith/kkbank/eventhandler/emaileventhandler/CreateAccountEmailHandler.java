@@ -1,4 +1,4 @@
-package com.nith.kkbank.eventhandler;
+package com.nith.kkbank.eventhandler.emaileventhandler;
 
 import com.nith.kkbank.dto.EmailDetails;
 import com.nith.kkbank.event.CreateAccountEvent;
