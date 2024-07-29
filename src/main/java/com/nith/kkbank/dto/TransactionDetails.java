@@ -11,7 +11,11 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CreditDebitTransactionDetails {
+public class TransactionDetails {
     private String accountNumber;
-    private BigDecimal amount;
+    private BigDecimal creditAmount;
+    private BigDecimal debitAmount;
+    private String transactionType;
+    private String transactionDescription;
+    private String transactionStatus;
 }

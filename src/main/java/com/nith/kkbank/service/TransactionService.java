@@ -1,9 +1,8 @@
 package com.nith.kkbank.service;
 
-import com.nith.kkbank.dto.CreditDebitTransactionDetails;
+import com.nith.kkbank.dto.TransactionDetails;
 
 public interface TransactionService {
 
-    void creditTransaction(CreditDebitTransactionDetails details);
-    void debitTransaction(CreditDebitTransactionDetails details);
+    void saveTransaction(TransactionDetails details);
 }

@@ -1,13 +1,10 @@
 package com.nith.kkbank.service.impl;
 
 import com.nith.kkbank.dto.*;
-import com.nith.kkbank.entity.Transaction;
 import com.nith.kkbank.entity.User;
-import com.nith.kkbank.repository.TransactionRepository;
 import com.nith.kkbank.repository.UserRepository;
 import com.nith.kkbank.service.UserService;
 import com.nith.kkbank.utils.AccountUtils;
-import com.nith.kkbank.utils.TransactionUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,18 +22,15 @@ class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
-    @Mock
-    private TransactionRepository transactionRepository;
     private UserService userService;
     AutoCloseable autoCloseable;
     UserRequest userRequest;
     User user;
-    Transaction transaction;
 
     @BeforeEach
     void setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this);
-        userService = new UserServiceImpl(userRepository, transactionRepository, null);
+        userService = new UserServiceImpl(userRepository, null);
         userRequest = new UserRequest("Abc", "Def", "Ghi", "Male", "Jkl, Mno",
                 "KRL", "abcdef07@gmail.com", "1234567890", "9876543210");
     }
@@ -132,7 +126,6 @@ class UserServiceImplTest {
     @Test
     void testCreditAccountOnExistingAccount() {
         mock(UserRepository.class);
-        mock(TransactionRepository.class);
         user = AccountUtils.buildUser(userRequest);
         when(userRepository.existsByAccountNumber(user.getAccountNumber())).thenReturn(true);
         when(userRepository.findByAccountNumber(user.getAccountNumber())).thenReturn(user);
@@ -161,7 +154,6 @@ class UserServiceImplTest {
     @Test
     void testDebitAccountOnExistingAccountWithNonZeroBalance() {
         mock(UserRepository.class);
-        mock(TransactionRepository.class);
         user = AccountUtils.buildUser(userRequest);
         user.setAccountBalance(BigDecimal.valueOf(20000));
         BigDecimal currentBalance = user.getAccountBalance();
@@ -244,15 +236,6 @@ class UserServiceImplTest {
                 .destinationAccountNumber(user2.getAccountNumber())
                 .amount(BigDecimal.valueOf(5000))
                 .build();
-        transaction = Transaction.builder()
-                .transactionDescription(TransactionUtils.createTransferDescription(user2.getAccountNumber(), true))
-                .transactionType(TransactionUtils.TRANSFER)
-                .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
-                .accountNumber(transferRequest.getDestinationAccountNumber())
-                .debitAmount(BigDecimal.ZERO)
-                .creditAmount(transferRequest.getAmount())
-                .build();
-        when(transactionRepository.save(Mockito.any(Transaction.class))).thenReturn(transaction);
         BankResponse transferResponse = userService.transfer(transferRequest);
         assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_CODE);
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_MESSAGE);
@@ -263,7 +246,6 @@ class UserServiceImplTest {
     @Test
     void testTransferToNonZeroBalanceAccount() {
         mock(UserRepository.class);
-        mock(TransactionRepository.class);
         User user1 = AccountUtils.buildUser(userRequest);
         user1.setAccountBalance(BigDecimal.valueOf(10000));
         BigDecimal sourceAccountBalance = user1.getAccountBalance();
@@ -282,15 +264,6 @@ class UserServiceImplTest {
                 .destinationAccountNumber(user2.getAccountNumber())
                 .amount(BigDecimal.valueOf(5000))
                 .build();
-        transaction = Transaction.builder()
-                .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
-                .accountNumber(user2.getAccountNumber())
-                .creditAmount(transferRequest.getAmount())
-                .debitAmount(BigDecimal.ZERO)
-                .transactionType(TransactionUtils.TRANSFER)
-                .transactionDescription(TransactionUtils.createTransferDescription(user2.getAccountNumber(), true))
-                .build();
-        when(transactionRepository.save(Mockito.any(Transaction.class))).thenReturn(transaction);
         BankResponse transferResponse = userService.transfer(transferRequest);
         assertThat(transferResponse.getResponseCode()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_CODE);
         assertThat(transferResponse.getResponseMessage()).isEqualTo(AccountUtils.TRANSFER_SUCCESS_MESSAGE);

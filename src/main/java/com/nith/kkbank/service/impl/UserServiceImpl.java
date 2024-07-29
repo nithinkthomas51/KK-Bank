@@ -1,11 +1,9 @@
 package com.nith.kkbank.service.impl;
 import com.nith.kkbank.dto.*;
-import com.nith.kkbank.entity.Transaction;
 import com.nith.kkbank.entity.User;
 import com.nith.kkbank.event.CreateAccountEvent;
 import com.nith.kkbank.event.CreditDebitEvent;
 import com.nith.kkbank.event.TransferEvent;
-import com.nith.kkbank.repository.TransactionRepository;
 import com.nith.kkbank.repository.UserRepository;
 import com.nith.kkbank.service.UserService;
 import com.nith.kkbank.utils.AccountUtils;
@@ -25,9 +23,6 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     UserRepository userRepository;
-
-    @Autowired
-    TransactionRepository transactionRepository;
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -210,26 +205,10 @@ public class UserServiceImpl implements UserService {
         // Debit from source account
         sourceUser.setAccountBalance(sourceUser.getAccountBalance().subtract(request.getAmount()));
         userRepository.save(sourceUser);
-        transactionRepository.save(Transaction.builder()
-                        .transactionDescription(TransactionUtils.createTransferDescription(destinationUser.getAccountNumber(), false))
-                        .debitAmount(request.getAmount())
-                        .transactionType(TransactionUtils.TRANSFER)
-                        .creditAmount(BigDecimal.ZERO)
-                        .accountNumber(sourceUser.getAccountNumber())
-                        .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
-                        .build());
 
         // Credit to destination account
         destinationUser.setAccountBalance(destinationUser.getAccountBalance().add(request.getAmount()));
         userRepository.save(destinationUser);
-        transactionRepository.save(Transaction.builder()
-                .transactionDescription(TransactionUtils.createTransferDescription(sourceUser.getAccountNumber(), true))
-                .creditAmount(request.getAmount())
-                .transactionType(TransactionUtils.TRANSFER)
-                .debitAmount(BigDecimal.ZERO)
-                .accountNumber(destinationUser.getAccountNumber())
-                .transactionStatus(TransactionUtils.TRANSACTION_COMPLETE)
-                .build());
 
         if (eventPublisher != null) {
             eventPublisher.publishEvent(new TransferEvent(this,
