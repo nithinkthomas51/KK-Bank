@@ -1,4 +1,4 @@
-package com.nith.kkbank.eventhandler;
+package com.nith.kkbank.eventhandler.emaileventhandler;
 
 import com.nith.kkbank.event.CreditDebitEvent;
 import com.nith.kkbank.service.EmailService;

@@ -1,12 +1,17 @@
 package com.nith.kkbank.utils;
 
 import com.nith.kkbank.dto.EmailDetails;
+import org.hibernate.type.internal.CompositeUserTypeJavaTypeWrapper;
 
 import java.math.BigDecimal;
 
 public class EmailUtils {
 
-    private static final String CUSTOMER_SUPPORT = "knkbankcustomersupport@gmail.com";
+    public static final String CUSTOMER_SUPPORT = "knkbankcustomersupport@gmail.com";
+    public static final String GREETINGS = "Dear Customer,\n";
+    public static final String WELCOME_STRING = "\n\nWelcome to KnK Banking family!!!";
+    public static final String THANK_YOU = "\n\nThank you for banking with us.";
+    public static final String SALUTATION = "\nWARM Regards\nKnK Bank";
 
     public static EmailDetails generateTransferEmailDetailsForSource(
              String sourceUserEmail,
@@ -18,15 +23,20 @@ public class EmailUtils {
                     return EmailDetails.builder()
                             .subject("DEBIT ALERT")
                             .recipient(sourceUserEmail)
-                            .messageBody("Your transfer of "
+                            .messageBody(GREETINGS
+                                    + "Your transfer of "
                                     + transferAmount
                                     + " rupees to the account "
                                     + destinationAccountNumber
                                     + " ("
-                                    + destinationUserName
+                                    + destinationUserName.strip()
                                     + ") is successful."
                                     + "\nYour current balance : "
-                                    + sourceAccountBalance)
+                                    + sourceAccountBalance
+                                    + "\nIf not done by you, please contact "
+                                    + CUSTOMER_SUPPORT
+                                    + THANK_YOU
+                                    + SALUTATION)
                             .build();
     }
 
@@ -40,15 +50,18 @@ public class EmailUtils {
                     return EmailDetails.builder()
                             .recipient(destinationUserEmail)
                             .subject("CREDIT ALERT")
-                            .messageBody("Amount Credited : "
+                            .messageBody(GREETINGS
+                                    + "Amount Credited : "
                                     + transferAmount
                                     + "\nTransferred by : "
                                     + sourceAccountNumber
                                     + "("
-                                    + sourceUserName
+                                    + sourceUserName.strip()
                                     + ")"
                                     + "\nYour current balance : "
-                                    + destinationAccountBalance)
+                                    + destinationAccountBalance
+                                    + THANK_YOU
+                                    + SALUTATION)
                             .build();
     }
 
@@ -62,27 +75,36 @@ public class EmailUtils {
         emailDetails.setRecipient(emailId);
         emailDetails.setSubject(transactionType + " ALERT");
         if (transactionType.equals(TransactionUtils.CREDIT)) {
-            emailDetails.setMessageBody("Your account "
+            emailDetails.setMessageBody(GREETINGS
+                    + "Your account "
                     + accountNumber
                     + " is credited with "
                     + amount
                     + " rupees.\nYour current balance : "
-                    + currentBalance);
+                    + currentBalance
+                    + THANK_YOU
+                    + SALUTATION);
         } else if (transactionType.equals(TransactionUtils.DEBIT)){
-            emailDetails.setMessageBody(amount
-                    + " rupees spent on your account "
+            emailDetails.setMessageBody(GREETINGS
+                    + "RS. " + amount
+                    + " spent on your account "
                     + accountNumber
                     + ".\nYour current Balance : "
                     + currentBalance
-                    + "\nIf not done by you, please contact KnK Bank customer support\n"
-                    + CUSTOMER_SUPPORT);
+                    + "\nIf not done by you, please contact "
+                    + CUSTOMER_SUPPORT
+                    + THANK_YOU
+                    + SALUTATION);
         } else {
-            emailDetails.setMessageBody("Noticed an unknown transaction of "
+            emailDetails.setMessageBody(GREETINGS
+                    + "Noticed an unknown transaction of "
                     + amount
                     + " rupees on your account "
                     + accountNumber
-                    + "\nIf not done by you, please contact KnK Bank customer support\n"
-                    + CUSTOMER_SUPPORT);
+                    + "\nPlease contact "
+                    + CUSTOMER_SUPPORT
+                    + " to review this transaction.\n"
+                    + SALUTATION);
         }
         return emailDetails;
     }
